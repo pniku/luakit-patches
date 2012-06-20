@@ -1,0 +1,79 @@
+--- /etc/xdg/luakit/window.lua	2012-06-12 00:45:26.000000000 +0200
++++ window.lua	2012-06-13 00:09:11.369917851 +0200
+@@ -48,6 +48,7 @@
+                 layout = hbox(),
+                 ebox   = eventbox(),
+                 buf    = label(),
++                nscr   = label(),
+                 ssl    = label(),
+                 tabi   = label(),
+                 scroll = label(),
+@@ -88,6 +89,7 @@
+     -- Pack right-aligned statusbar elements
+     local r = w.sbar.r
+     r.layout:pack(r.buf)
++    r.layout:pack(r.nscr)
+     r.layout:pack(r.ssl)
+     r.layout:pack(r.tabi)
+     r.layout:pack(r.scroll)
+@@ -149,6 +151,7 @@
+                 w:update_progress()
+                 w:update_tablist()
+                 w:update_buf()
++                w:update_nscr()
+                 w:update_ssl()
+                 w:update_hist()
+                 return false
+@@ -570,6 +573,18 @@
+         w.tablist:update(tabs, current)
+     end,
+ 
++    update_nscr = function (w)
++        local scripts = w.view.enable_scripts
++        local plugins = w.view.enable_plugins
++        local nscr = w.sbar.r.nscr
++        tmpl = '<span foreground="%s">%s</span>   <span foreground="%s">%s</span>  '
++        nscr.text = string.format(tmpl, 
++        ( scripts and theme.trust_fg ) or theme.notrust_fg,
++        ( scripts and "s" ) or "!s",
++        ( plugins and theme.trust_fg ) or theme.notrust_fg,
++        ( plugins and "p" ) or "!p" )
++    end,
++
+     new_tab = function (w, arg, switch, order)
+         local view
+         -- Use blank tab first
+--- /etc/xdg/luakit/webview.lua	2012-06-12 00:45:26.000000000 +0200
++++ webview.lua	2012-06-12 18:50:41.534094775 +0200
+@@ -74,6 +74,7 @@
+                 if w.view == v then
+                     w:update_progress()
+                     w:update_ssl()
++                    w:update_nscr()
+                 end
+             end)
+         end
+--- /usr/share/luakit/lib/noscript.lua	2012-06-12 00:45:26.000000000 +0200
++++ noscript.lua	2012-06-13 00:14:27.653460968 +0200
+@@ -20,8 +20,8 @@
+ module "noscript"
+ 
+ -- Default blocking values
+-enable_scripts = true
+-enable_plugins = true
++enable_scripts = false
++enable_plugins = false
+ 
+ create_table = [[
+ CREATE TABLE IF NOT EXISTS by_domain (
+@@ -115,7 +115,7 @@
+ 
+ local buf = lousy.bind.buf
+ add_binds("normal", {
+-    buf("^,ts$", function (w) w:toggle_scripts() end),
+-    buf("^,tp$", function (w) w:toggle_plugins() end),
+-    buf("^,tr$", function (w) w:toggle_remove()  end),
++    buf("^,ts$", function (w) w:toggle_scripts();w.view:reload() end),
++    buf("^,tp$", function (w) w:toggle_plugins();w.view:reload() end),
++    buf("^,tr$", function (w) w:toggle_remove();w.view:reload() end),
+ })
